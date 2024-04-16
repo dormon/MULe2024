@@ -16,11 +16,19 @@ int main(int argc,char*argv[]){
   auto vs = std::make_shared<Shader>(GL_VERTEX_SHADER,R".(
   #version 330
 
+  out vec2 vTexCoord;
+
   void main(){
-    if(gl_VertexID == 0)gl_Position = vec4(0,0,0,1);
-    if(gl_VertexID == 1)gl_Position = vec4(1,0,0,1);
-    if(gl_VertexID == 2)gl_Position = vec4(0,1,0,1);
-    if(gl_VertexID == 3)gl_Position = vec4(1,1,0,1);
+    // 0&1 -> 0
+    // 1&1 -> 1
+    // 2&1 -> 0
+    // 3&1 -> 1
+    // 0>>1 -> 0
+    // 1>>1 -> 0
+    // 2>>1 -> 1
+    // 3>>1 -> 1
+    vTexCoord = vec2(gl_VertexID&1,gl_VertexID>>1);
+    gl_Position = vec4(vTexCoord,0,1);
 
   }
 
@@ -28,15 +36,19 @@ int main(int argc,char*argv[]){
 
   auto fs = std::make_shared<Shader>(GL_FRAGMENT_SHADER,R".(
   #version 330
+  
+  in vec2 vTexCoord;
 
   out vec4 fColor;
   void main(){
-    fColor = vec4(1);
+    fColor = vec4(vTexCoord,0,1);
   }
 
   ).");
 
   auto prg = std::make_shared<Program>(vs,fs);
+
+  auto texture = std::make_shared<Texture>(GL_TEXTURE_2D,GL_RGB8I,1,10,10);
 
   bool running = true;
   while(running){ // MAIN LOOP
@@ -45,7 +57,7 @@ int main(int argc,char*argv[]){
       if(e.type == SDL_QUIT)running = false;
     }
 
-    glClearColor(1,1,0,1);
+    glClearColor(.2,.2,.2,1);
     glClear(GL_COLOR_BUFFER_BIT);
 
     prg->use();
